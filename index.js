@@ -3,7 +3,7 @@ const app = express();
 const db = require("./client");
 require("dotenv").config();
 const { validationResult } = require("express-validator");
-const { idValidation } = require("./validations");
+const { idValidation, newUserValidation } = require("./validations");
 
 app.use(express.json());
 
@@ -15,6 +15,13 @@ app.get("/", (req, res) => {
 
 app.get("/:id", idValidation, (req, res) => {
   const { id } = req.params;
+  const errors = validationResult(req);
+
+  if (!errors.isEmpty()) {
+    return res.status(422).json({
+      errors: errors.array(),
+    });
+  }
 
   const getSingleUser = {
     text: "SELECT * FROM users WHERE id = $1",
@@ -22,17 +29,36 @@ app.get("/:id", idValidation, (req, res) => {
   };
 
   db.query(getSingleUser)
-    .then((dbData) => {
-      if (dbData.rows.length < 1) {
-        return res.status(404).send("404: No user with this id was found.");
-      }
-      res.send(dbData.rows);
-    })
+    .then((dbData) => res.send(dbData.rows))
     .catch((err) => res.sendStatus(500));
 });
 
-app.post("/", (req, res) => {
-  db.query("SELECT * FROM users")
+app.post("/", newUserValidation, (req, res) => {
+  const { first_name, last_name, age, active } = req.body;
+  const errors = validationResult(req);
+
+  if (!errors.isEmpty()) {
+    return res.status(422).json({
+      errors: errors.array(),
+    });
+  }
+
+  const createNewUser = {
+    text: `
+    INSERT INTO users(first_name, last_name, age, active)
+    VALUES ($1, $2, $3, $4)
+    RETURNING *
+    `,
+    values: [first_name, last_name, age, active],
+  };
+
+  db.query(createNewUser)
+    .then((dbData) => res.send(dbData.rows))
+    .catch((err) => res.sendStatus(500));
+});
+
+app.put("/:id", idValidation, (req, res) => {
+  db.query(createNewUser)
     .then((dbData) => res.send(dbData.rows))
     .catch((err) => res.sendStatus(500));
 });
