@@ -12,13 +12,6 @@ userRouter.get("/", (req, res) => {
 
 userRouter.get("/:id", idValidation, (req, res) => {
   const { id } = req.params;
-  const errors = validationResult(req);
-
-  if (!errors.isEmpty()) {
-    return res.status(422).json({
-      errors: errors.array(),
-    });
-  }
 
   const getSingleUser = {
     text: "SELECT * FROM users WHERE id = $1",
@@ -96,13 +89,6 @@ userRouter.put("/:id", idValidation, newUserValidation, (req, res) => {
 
 userRouter.delete("/:id", idValidation, (req, res) => {
   const { id } = req.params;
-  const errors = validationResult(req);
-
-  if (!errors.isEmpty()) {
-    return res.status(422).json({
-      errors: errors.array(),
-    });
-  }
 
   const deleteUser = {
     text: `

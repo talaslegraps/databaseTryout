@@ -9,7 +9,13 @@ const newUserValidation = [
   check("active").not().isEmpty().isBoolean(),
 ];
 
+const newOrderValidation = [
+  check("price").not().isEmpty().isCurrency(),
+  check("user_id").not().isEmpty().isInt(),
+];
+
 module.exports = {
   idValidation,
   newUserValidation,
+  newOrderValidation,
 };
