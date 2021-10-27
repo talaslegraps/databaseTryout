@@ -112,6 +112,27 @@ userRouter.put("/:id", idValidation, newUserValidation, (req, res) => {
     .catch((err) => res.sendStatus(500));
 });
 
+userRouter.put("/:id/check-inactive", idValidation, (req, res) => {
+  const { id } = req.params;
+
+  const checkActivity = {
+    text: `
+      UPDATE users
+      SET active=false
+      WHERE id NOT IN (SELECT user_id FROM orders)
+      AND id=$1
+      RETURNING *;
+      `,
+    values: [id],
+  };
+
+  db.query(checkActivity)
+    .then((dbData) => {
+      res.send(dbData.rows);
+    })
+    .catch((err) => res.sendStatus(500));
+});
+
 userRouter.delete("/:id", idValidation, (req, res) => {
   const { id } = req.params;
 
@@ -133,7 +154,9 @@ userRouter.delete("/:id", idValidation, (req, res) => {
       }
       res.send(dbData.rows);
     })
-    .catch((err) => res.sendStatus(500));
+    .catch((err) => {
+      res.sendStatus(500);
+    });
 });
 
 module.exports = userRouter;
