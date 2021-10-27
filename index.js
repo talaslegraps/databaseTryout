@@ -1,10 +1,14 @@
 const express = require("express");
 const app = express();
+const db = require("./client");
+require("dotenv").config();
 
 app.use(express.json());
 
 app.get("/", (req, res) => {
-  // app.send("send something");
+  db.query("SELECT * FROM users")
+    .then((dbData) => res.send(dbData.rows))
+    .catch((err) => res.sendStatus(500));
 });
 
 const port = process.env.PORT || 3000;
