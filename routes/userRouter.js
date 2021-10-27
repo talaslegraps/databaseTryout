@@ -30,6 +30,31 @@ userRouter.get("/:id", idValidation, (req, res) => {
     .catch((err) => res.sendStatus(500));
 });
 
+userRouter.get("/:id/orders", idValidation, (req, res) => {
+  const { id } = req.params;
+
+  const getOrdersByUser = {
+    text: `
+        SELECT * FROM orders
+        WHERE user_id=$1
+        `,
+    values: [id],
+  };
+
+  db.query(getOrdersByUser)
+    .then((dbData) => {
+      if (dbData.rows.length < 1) {
+        return res
+          .status(404)
+          .send(
+            "404: There is no user and/or order with this user_id in the database."
+          );
+      }
+      res.send(dbData.rows);
+    })
+    .catch((err) => res.sendStatus(500));
+});
+
 userRouter.post("/", newUserValidation, (req, res) => {
   const { first_name, last_name, age, active } = req.body;
   const errors = validationResult(req);
