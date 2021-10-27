@@ -57,8 +57,28 @@ app.post("/", newUserValidation, (req, res) => {
     .catch((err) => res.sendStatus(500));
 });
 
-app.put("/:id", idValidation, (req, res) => {
-  db.query(createNewUser)
+app.put("/:id", idValidation, newUserValidation, (req, res) => {
+  const { id } = req.params;
+  const { first_name, last_name, age, active } = req.body;
+  const errors = validationResult(req);
+
+  if (!errors.isEmpty()) {
+    return res.status(422).json({
+      errors: errors.array(),
+    });
+  }
+
+  const updateUser = {
+    text: `
+    UPDATE users
+    SET first_name=$1, last_name=$2, age=$3, active=$4
+    WHERE id=$5
+    RETURNING *
+    `,
+    values: [first_name, last_name, age, active, id],
+  };
+
+  db.query(updateUser)
     .then((dbData) => res.send(dbData.rows))
     .catch((err) => res.sendStatus(500));
 });
