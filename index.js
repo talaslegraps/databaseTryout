@@ -8,7 +8,7 @@ const { idValidation, newUserValidation } = require("./validations");
 app.use(express.json());
 
 app.get("/", (req, res) => {
-  db.query("SELECT * FROM users")
+  db.query("SELECT * FROM users ORDER BY id ASC")
     .then((dbData) => res.send(dbData.rows))
     .catch((err) => res.sendStatus(500));
 });
@@ -29,7 +29,14 @@ app.get("/:id", idValidation, (req, res) => {
   };
 
   db.query(getSingleUser)
-    .then((dbData) => res.send(dbData.rows))
+    .then((dbData) => {
+      if (dbData.rows.length < 1) {
+        return res
+          .status(404)
+          .send("404: No user with this id exists in the database.");
+      }
+      res.send(dbData.rows);
+    })
     .catch((err) => res.sendStatus(500));
 });
 
@@ -79,7 +86,45 @@ app.put("/:id", idValidation, newUserValidation, (req, res) => {
   };
 
   db.query(updateUser)
-    .then((dbData) => res.send(dbData.rows))
+    .then((dbData) => {
+      if (dbData.rows.length < 1) {
+        return res
+          .status(404)
+          .send("404: No user with this id exists in the database.");
+      }
+      res.send(dbData.rows);
+    })
+    .catch((err) => res.sendStatus(500));
+});
+
+app.delete("/:id", idValidation, (req, res) => {
+  const { id } = req.params;
+  const errors = validationResult(req);
+
+  if (!errors.isEmpty()) {
+    return res.status(422).json({
+      errors: errors.array(),
+    });
+  }
+
+  const deleteUser = {
+    text: `
+    DELETE FROM users
+    WHERE id = $1
+    RETURNING *
+    `,
+    values: [id],
+  };
+
+  db.query(deleteUser)
+    .then((dbData) => {
+      if (dbData.rows.length < 1) {
+        return res
+          .status(404)
+          .send("404: No user with this id exists in the database.");
+      }
+      res.send(dbData.rows);
+    })
     .catch((err) => res.sendStatus(500));
 });
 
