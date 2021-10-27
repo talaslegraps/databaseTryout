@@ -30,6 +30,31 @@ userRouter.get("/:id", idValidation, (req, res) => {
     .catch((err) => res.sendStatus(500));
 });
 
+userRouter.get("/:id/orders", idValidation, (req, res) => {
+  const { id } = req.params;
+
+  const getOrdersByUser = {
+    text: `
+        SELECT * FROM orders
+        WHERE user_id=$1
+        `,
+    values: [id],
+  };
+
+  db.query(getOrdersByUser)
+    .then((dbData) => {
+      if (dbData.rows.length < 1) {
+        return res
+          .status(404)
+          .send(
+            "404: There is no user and/or order with this user_id in the database."
+          );
+      }
+      res.send(dbData.rows);
+    })
+    .catch((err) => res.sendStatus(500));
+});
+
 userRouter.post("/", newUserValidation, (req, res) => {
   const { first_name, last_name, age, active } = req.body;
   const errors = validationResult(req);
@@ -87,6 +112,27 @@ userRouter.put("/:id", idValidation, newUserValidation, (req, res) => {
     .catch((err) => res.sendStatus(500));
 });
 
+userRouter.put("/:id/check-inactive", idValidation, (req, res) => {
+  const { id } = req.params;
+
+  const checkActivity = {
+    text: `
+      UPDATE users
+      SET active=false
+      WHERE id NOT IN (SELECT user_id FROM orders)
+      AND id=$1
+      RETURNING *;
+      `,
+    values: [id],
+  };
+
+  db.query(checkActivity)
+    .then((dbData) => {
+      res.send(dbData.rows);
+    })
+    .catch((err) => res.sendStatus(500));
+});
+
 userRouter.delete("/:id", idValidation, (req, res) => {
   const { id } = req.params;
 
@@ -108,7 +154,9 @@ userRouter.delete("/:id", idValidation, (req, res) => {
       }
       res.send(dbData.rows);
     })
-    .catch((err) => res.sendStatus(500));
+    .catch((err) => {
+      res.sendStatus(500);
+    });
 });
 
 module.exports = userRouter;
